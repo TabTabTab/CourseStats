@@ -15,7 +15,12 @@ A simnple program for calculating course points for D students at lth.
     5.) wait, the program scrapes the web for course info and the lth page loads sloowly
     6.) marvel
 
-## Requirements ##
+### Requirements ###
 
     1.) python 3
     2.) texttopdf
+
+    ## Python libs ##
+        1.) lxml
+        2.) requests
+        3.) pickle

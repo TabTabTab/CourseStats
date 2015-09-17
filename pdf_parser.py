@@ -3,7 +3,9 @@ import sys, os
 from subprocess import Popen
 UNF_HEADER = "Credits obtained in unfinished courses"
 COURSES = "Courses"
-temp_file = os.path.join("temp", "temp_pdf")
+me_dir = os.path.dirname(os.path.realpath(__file__))
+
+temp_file = os.path.join(me_dir, "temp", "temp_pdf")
 
 def get_read_courses(pdf_file, avail_courses):
     course_file = pdf_to_text(pdf_file)
@@ -40,8 +42,6 @@ def parse_text(pdf_file, avail_courses):
                         look_for_course(line, fin_courses)
                 else:
                     look_for_course(line, unfin_courses)
-    print("fin",fin_courses)
-    print("unfin", unfin_courses)
     return {'fin':fin_courses, 'unfin':unfin_courses}
 
 def main(argv):

@@ -9,29 +9,30 @@ import sys
 import pickle
 
 def dump_pkl(tables):
-    with open('tables.pkl', 'wb') as pkl_file:
+    with open('info_pages.pkl', 'wb') as pkl_file:
         # Pickle dictionary using protocol 0.
         pickle.dump(tables, pkl_file)
 
 def read_pkl():
-    with open('tables.pkl', 'rb') as pkl_file:
+    with open('info_pages.pkl', 'rb') as pkl_file:
         return pickle.load(pkl_file)
 
-def get_tables(demo):
+def get_tables(demo, make_pkl):
+    page_texts = ""
     if demo:
-        page_text = read_pkl()
+        page_texts = read_pkl()
     else:
-        urls = [
-            "http://kurser.lth.se/lot/?lasar=15_16&sort1=lp&sort2=slut_lp&sort3=namn&prog=D&forenk=t&val=program&soek=t",
-            "http://kurser.lth.se/lot/?lasar=14_15&sort1=lp&sort2=slut_lp&sort3=namn&prog=D&forenk=t&val=program&soek",
-        ]
-        page_text = ""
-        for url in urls:
+        years = ["11_12", "12_13", "13_14", "15_16"]
+        base_url = "http://kurser.lth.se/lot/?lasar=%s&sort1=lp&sort2=slut_lp&sort3=namn&prog=D&forenk=t&val=program"
+        for year in years:
+            url = base_url%year
             page = requests.get(url)
-            page_text = "\n".join([page_text, page.text])
-        dump_pkl(page_text)
+            page.encoding = 'utf-8'
+            page_texts = "\n".join([page_texts, page.text])
+        if make_pkl:
+            dump_pkl(page_texts)
 
-    tree = html.fromstring(page_text)
+    tree = html.fromstring(page_texts)
 
     tables = tree.xpath('//table[@class="CourseListView border hover zebra"]')
     return tables
@@ -41,7 +42,6 @@ def table_info(t, container):
     th3 = tp.getprevious()
 
     course_type = th3.text
-    #print(course_type)
     course_body = t.getchildren()[1] #this should give us the "tbody"
     courses = course_body.getchildren()
 
@@ -65,13 +65,12 @@ def handleCourse(course_element):
         c['code'] = code
         c['points'] = float(info['points'].replace(',','.'))
         c['level'] = info['level']
-        #print(c)
-    except IndexError as e:
+    except IndexError:
         return None
     return c
 
-def get_info(pdf_file, demo):
-    ts = get_tables(demo)
+def get_info(pdf_file, demo, make_pkl):
+    ts = get_tables(demo, make_pkl)
     cs = dict()
     for t in ts:
         table_info(t, cs)
@@ -81,17 +80,20 @@ def get_info(pdf_file, demo):
         avail_courses.append(v['code'])
     read_courses = get_read_courses(pdf_file, avail_courses)
 
-    #points = 0
-    #for course in read_courses['fin']:
-    #    points += cs[course]['points']
-    #    print(cs[course]['code'], cs[course]['points'])
-    #print("points:", points)
     generate_stats(read_courses, cs)
 
 def generate_stats(read_courses, course_db):
-    points  = 0
+    print()
+    print("============ Stats for FINISHED courses =============")
+    generate_stats_ct(read_courses['fin'], course_db)
+    print()
+    print("============ Stats for UNFINISHED courses =============")
+    generate_stats_ct(read_courses['unfin'], course_db)
+
+def generate_stats_ct(read_courses, course_db):
     specialisations = defaultdict(dict)
-    for course in read_courses['fin']:
+    points  = 0
+    for course in read_courses:
         course = course_db[course]
         spls = course['types']
         p = course['points']
@@ -111,17 +113,22 @@ def generate_stats(read_courses, course_db):
         print(s,":",v)
     print ("points:", points)
 
-def main(argv):
-    demo = "demo" in argv
+def remove_arg(argv, arg):
     try:
-        argv.remove("demo")
+        argv.remove(arg)
     except ValueError:
         pass
+
+def main(argv):
+    keys = ['demo', 'pkl']
+    demo = "demo" in argv
+    make_pkl = "pkl" in argv
+    [remove_arg(argv, k) for k in keys]
     if len(argv) < 1:
-        print("please supply a pdf file (not named 'demo')")
+        print("please supply a pdf file, not accepted names are:",", ".join(keys))
         return
     pdf_file = argv[0]
-    get_info(pdf_file, demo)
+    get_info(pdf_file, demo, make_pkl)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
