@@ -17,20 +17,21 @@ def read_pkl():
     with open('info_pages.pkl', 'rb') as pkl_file:
         return pickle.load(pkl_file)
 
-def get_tables(demo, make_pkl):
+def get_tables(update_courses):
     page_texts = ""
-    if demo:
+    if not update_courses:
         page_texts = read_pkl()
     else:
-        years = ["11_12", "12_13", "13_14", "15_16"]
+        print("Updating courses..")
+        years = ["11_12", "12_13", "13_14","14_15", "15_16"]
         base_url = "http://kurser.lth.se/lot/?lasar=%s&sort1=lp&sort2=slut_lp&sort3=namn&prog=D&forenk=t&val=program"
         for year in years:
+            print ("Updating %s"%year)
             url = base_url%year
             page = requests.get(url)
             page.encoding = 'utf-8'
             page_texts = "\n".join([page_texts, page.text])
-        if make_pkl:
-            dump_pkl(page_texts)
+        dump_pkl(page_texts)
 
     tree = html.fromstring(page_texts)
 
@@ -69,8 +70,8 @@ def handleCourse(course_element):
         return None
     return c
 
-def get_info(pdf_file, demo, make_pkl):
-    ts = get_tables(demo, make_pkl)
+def get_info(pdf_file, update_courses):
+    ts = get_tables(update_courses)
     cs = dict()
     for t in ts:
         table_info(t, cs)
@@ -120,15 +121,15 @@ def remove_arg(argv, arg):
         pass
 
 def main(argv):
-    keys = ['demo', 'pkl']
-    demo = "demo" in argv
-    make_pkl = "pkl" in argv
+    keys = ['update_courses']
+    update_courses = "update_courses" in argv
+    print(update_courses)
     [remove_arg(argv, k) for k in keys]
     if len(argv) < 1:
         print("please supply a pdf file, not accepted names are:",", ".join(keys))
         return
     pdf_file = argv[0]
-    get_info(pdf_file, demo, make_pkl)
+    get_info(pdf_file, update_courses)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

@@ -11,9 +11,13 @@ A simnple program for calculating course points for D students at lth.
         b.) Make sure you have course codes included
     3.) go to the repository root directory
     4.) do:
-        $ ./course_parser.py [demo] 'Resultat.pdf'
+        $ ./course_stats.py [update_courses] 'Resultat.pdf'
     5.) wait, the program scrapes the web for course info and the lth page loads sloowly
     6.) marvel
+
+    # update_courses #
+        Scrape the course pages from year 11-12 to 15-16 and update the course data
+
 
 ### Requirements ###
 
