@@ -50,9 +50,9 @@ def table_info(t, container):
         if c is not None:
             course_code = c['code']
             if course_code in container:
-                container[course_code]['types'].append(course_type)
+                container[course_code]['types'].add(course_type)
             else:
-                c['types'] = [course_type]
+                c['types'] = set([course_type])
                 container[course_code] = c
 
 def handleCourse(course_element):
@@ -70,7 +70,7 @@ def handleCourse(course_element):
         return None
     return c
 
-def get_info(demo):
+def get_info(pdf_file, demo):
     ts = get_tables(demo)
     cs = dict()
     for t in ts:
@@ -78,21 +78,50 @@ def get_info(demo):
 
     avail_courses = []
     for k,v in cs.items():
-        print(v)
         avail_courses.append(v['code'])
-    read_courses = get_read_courses(avail_courses)
+    read_courses = get_read_courses(pdf_file, avail_courses)
 
-    points = 0
+    #points = 0
+    #for course in read_courses['fin']:
+    #    points += cs[course]['points']
+    #    print(cs[course]['code'], cs[course]['points'])
+    #print("points:", points)
+    generate_stats(read_courses, cs)
+
+def generate_stats(read_courses, course_db):
+    points  = 0
+    specialisations = defaultdict(dict)
     for course in read_courses['fin']:
-        points += cs[course]['points']
-        print(cs[course]['code'], cs[course]['points'])
-    print("points:", points)
+        course = course_db[course]
+        spls = course['types']
+        p = course['points']
+        code = course['code']
+        level = course['level']
+        points += p
+        for spl in spls:
+            if spl not in specialisations:
+                specialisations[spl]['points'] = 0
+                specialisations[spl]['codes'] = []
+                specialisations[spl]['A'] = 0
+            specialisations[spl]['points'] += p
+            specialisations[spl]['codes'].append(code)
+            if level == 'A':
+                specialisations[spl]['A'] += p
+    for s,v in specialisations.items():
+        print(s,":",v)
+    print ("points:", points)
 
 def main(argv):
-    demo = False;
-    if len(argv) == 1 and argv[0].strip() == "demo":
-        demo = True
-    get_info(demo)
+    demo = "demo" in argv
+    try:
+        argv.remove("demo")
+    except ValueError:
+        pass
+    if len(argv) < 1:
+        print("please supply a pdf file (not named 'demo')")
+        return
+    pdf_file = argv[0]
+    get_info(pdf_file, demo)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
